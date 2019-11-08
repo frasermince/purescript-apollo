@@ -15,7 +15,7 @@ You can edit this file as you like.
     , "typelevel"
     ]
 , license = "Apache-2.0"
-, repository = ""
+, repository = "https://github.com/frasermince/purescript-apollo"
 , packages =
     ./packages.dhall
 , sources =
