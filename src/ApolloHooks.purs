@@ -1,5 +1,5 @@
 module ApolloHooks
-  ( QueryState
+  ( QueryState(..)
   , Cache
   , Options
   , gql
