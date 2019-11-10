@@ -1,0 +1,25 @@
+{
+  "name": "purescript-apollo",
+  "version": "0.0.1",
+  "description": "apollo for react-basic-hooks",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frasermince/purescript-apollo.git"
+  },
+  "author": "Fraser Mince",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/frasermince/purescript-apollo/issues"
+  },
+  "homepage": "https://github.com/frasermince/purescript-apollo#readme",
+  "dependencies": {
+    "@apollo/react-hooks": "^3.1.3"
+  }
+}
