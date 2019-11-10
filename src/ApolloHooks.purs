@@ -1,4 +1,12 @@
-module ApolloHooks where
+module ApolloHooks
+  ( QueryState
+  , Cache
+  , Options
+  , gql
+  , useMutation
+  , useQuery
+  , module GraphQL.Language.AST
+  ) where
 
 import Prelude
 import React.Basic.Hooks (Hook, UseEffect, type (/\), (/\))
@@ -36,14 +44,16 @@ type Cache mutation otherFields
     | otherFields
     }
 
-type JSOptions query otherFields mutation = ( update :: EffectFn2 (JSCache (Record query) otherFields) (Record mutation) (Unit) )
+type JSOptions query otherFields mutation
+  = ( update :: EffectFn2 (JSCache (Record query) otherFields) (Record mutation) (Unit) )
 
-type Options query otherFields mutation = ( update ::
-    ( Cache (Record query) otherFields ->
-      (Record mutation) ->
-      Effect Unit
+type Options query otherFields mutation
+  = ( update ::
+      ( Cache (Record query) otherFields ->
+        (Record mutation) ->
+        Effect Unit
+      )
     )
-  )
 
 foreign import runThisFn1 :: forall this a b. String -> this -> EffectFn1 a b
 
@@ -65,16 +75,16 @@ foreign import _useQuery ::
     (JSQueryResult d)
 
 foreign import _useMutation ::
-  forall v mutation query otherFields opts _opts
-  . EffectFn2 DocumentNode
+  forall v mutation query otherFields opts _opts.
+  EffectFn2 DocumentNode
     (Record opts)
     ( T2 (EffectFn1 (Record v) (Promise (Record mutation)))
         (JSQueryResult mutation)
     )
 
 useMutation ::
-  forall v mutation query otherFields opts _opts
-  . DocumentNode ->
+  forall v mutation query otherFields opts _opts.
+  DocumentNode ->
   Record opts ->
   Hook (UseEffect Unit)
     ( ( Record (v) ->
@@ -90,10 +100,9 @@ useMutation mutation options = React.do
     d = prj d1 tuple
   pure $ ((affFn mutationFunction) /\ (d))
   where
+  affFn mutationFunction x = mapAff (runEffectFn1 mutationFunction) x
 
-    affFn mutationFunction x = mapAff (runEffectFn1 mutationFunction) x
-
-    mapAff f x = (liftEffect $ f x) >>= Promise.toAff
+  mapAff f x = (liftEffect $ f x) >>= Promise.toAff
 
 useQuery ::
   forall d.
@@ -127,5 +136,5 @@ handleUpdate updateFn =
   mkEffectFn2
     ( \jsCache d -> updateFn (cache jsCache) d
     )
-  where cache jsCache = jsCache { readQuery = runEffectFn1 $ runThisFn1 "readQuery" jsCache, writeQuery = runEffectFn1 $ runThisFn1 "writeQuery" jsCache }
-
+  where
+  cache jsCache = jsCache { readQuery = runEffectFn1 $ runThisFn1 "readQuery" jsCache, writeQuery = runEffectFn1 $ runThisFn1 "writeQuery" jsCache }
