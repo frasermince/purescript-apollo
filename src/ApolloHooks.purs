@@ -29,7 +29,7 @@ import Prim.Row (class Union)
 
 data QueryState resultType
   = Loading
-  | Error {message :: (Array String)}
+  | Error {message :: (String)}
   | Data resultType
 
 type JSCache p x
@@ -64,7 +64,7 @@ gql string = runFn1 _gql string
 
 type JSQueryResult d
   = { loading :: Nullable Boolean
-    , error :: Nullable {message :: (Array String)}
+    , error :: Nullable {message :: (String)}
     , data :: Nullable (Record d)
     }
 
@@ -122,7 +122,7 @@ findState _ (Just error) _ = Error error
 
 findState (Just loading) _ _ = Loading
 
-findState _ _ _ = Error {message: ["Something went wrong"]}
+findState _ _ _ = Error {message: "Something went wrong"}
 
 queryState { loading, error, data: result } = findState l e d
   where
