@@ -153,7 +153,7 @@ let overrides = {
     , repo =
         "https://github.com/hendrikniemann/purescript-graphql"
     , version =
-        "master"
+        "9171bf94c5ba8ddb7813b603c6c684eac2687eb3"
     }
 
 }
