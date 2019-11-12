@@ -32,6 +32,8 @@ data QueryState resultType
   | Error {message :: (String)}
   | Data resultType
 
+derive instance eqQueryState :: Eq a => Eq (QueryState a)
+
 type JSCache p x
   = { readQuery :: EffectFn1 { query :: DocumentNode } (p)
     , writeQuery :: EffectFn1 { query :: DocumentNode, data :: p } (Unit)
