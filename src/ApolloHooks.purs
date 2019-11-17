@@ -71,9 +71,9 @@ type JSQueryResult d
     }
 
 foreign import _useQuery ::
-  forall d.
+  forall d opts.
   EffectFn2 DocumentNode
-    {}
+    (Record opts)
     (JSQueryResult d)
 
 foreign import _useMutation ::
@@ -107,9 +107,9 @@ useMutation mutation options = React.do
   mapAff f x = (liftEffect $ f x) >>= Promise.toAff
 
 useQuery ::
-  forall d.
+  forall d opts.
   DocumentNode ->
-  {} ->
+  Record opts ->
   Hook
     ( UseEffect Unit
     )
