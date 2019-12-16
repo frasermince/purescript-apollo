@@ -2,14 +2,16 @@ module ApolloHooks
   ( QueryState(..)
   , Cache
   , Options
+  , Client
   , gql
   , useMutation
   , useQuery
+  , useApolloClient
   , module GraphQL.Language.AST
   ) where
 
 import Prelude
-import React.Basic.Hooks (Hook, UseEffect, type (/\), (/\))
+import React.Basic.Hooks (Hook, UseEffect, type (/\), (/\), UseContext, useContext)
 import Data.Nullable (null, toMaybe, Nullable)
 import Data.Maybe (Maybe(..))
 import React.Basic.Hooks as React
@@ -34,6 +36,7 @@ data QueryState resultType
 
 derive instance eqQueryState :: Eq a => Eq (QueryState a)
 
+type Client = {resetStore :: Effect Unit}
 type JSCache p x
   = { readQuery :: EffectFn1 { query :: DocumentNode } (p)
     , writeQuery :: EffectFn1 { query :: DocumentNode, data :: p } (Unit)
@@ -83,6 +86,12 @@ foreign import _useMutation ::
     ( T2 (EffectFn1 (Record v) (Promise (Record mutation)))
         (JSQueryResult mutation)
     )
+
+foreign import _useApolloClient :: Hook (UseContext Client) (Nullable Client)
+useApolloClient :: Hook (UseContext Client) (Maybe Client)
+useApolloClient = React.do
+  client <- _useApolloClient
+  pure $ toMaybe client
 
 useMutation ::
   forall v mutation query otherFields opts _opts.

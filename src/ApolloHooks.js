@@ -2,6 +2,7 @@ var hooks = require('@apollo/react-hooks');
 var boost = require('apollo-boost');
 
 exports._gql = boost.gql;
+exports._useApolloClient = hooks.useApolloClient;
 exports._useQuery = hooks.useQuery;
 exports._useMutation = hooks.useMutation;
 exports.runThisFn1 = function(key){
