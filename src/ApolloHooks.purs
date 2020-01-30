@@ -7,6 +7,7 @@ module ApolloHooks
   , useMutation
   , useQuery
   , useApolloClient
+  , MutationState
   , module GraphQL.Language.AST
   ) where
 
@@ -22,7 +23,7 @@ import Effect.Uncurried (runEffectFn2, EffectFn2, runEffectFn1, EffectFn1, mkEff
 import Effect (Effect)
 import React.Basic.Hooks.Internal (unsafeHook)
 import Data.Tuple (Tuple(..))
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, launchAff_, throwError, error)
 import Control.Promise (Promise, fromAff)
 import Control.Promise as Promise
 import Data.Tuple.Native (T2, prj)
@@ -33,6 +34,11 @@ data QueryState resultType
   = Loading
   | Error {message :: (String)}
   | Data resultType
+
+data MutationState resultType
+  = ErrorM {message :: (String)}
+  | DataM resultType
+
 
 derive instance eqQueryState :: Eq a => Eq (QueryState a)
 
@@ -83,7 +89,7 @@ foreign import _useMutation ::
   forall v mutation query otherFields opts _opts.
   EffectFn2 DocumentNode
     (Record opts)
-    ( T2 (EffectFn1 (Record v) (Promise (Record mutation)))
+    ( T2 (EffectFn1 (Record v) (Promise (JSQueryResult mutation)))
         (JSQueryResult mutation)
     )
 
@@ -101,7 +107,7 @@ useMutation ::
     ( ( Record (v) ->
         Aff (Record mutation)
       )
-        /\ JSQueryResult mutation
+        /\ MutationState (Record mutation)
     )
 useMutation mutation options = React.do
   tuple <- unsafeHook $ runEffectFn2 _useMutation mutation options
@@ -109,9 +115,13 @@ useMutation mutation options = React.do
     mutationFunction = prj d0 tuple
   let
     d = prj d1 tuple
-  pure $ ((affFn mutationFunction) /\ (d))
+  pure $ ((affFn mutationFunction) /\ (mutationState d))
   where
-  affFn mutationFunction x = mapAff (runEffectFn1 mutationFunction) x
+  affFn mutationFunction x = do
+     result <- mapAff (runEffectFn1 mutationFunction) x
+     case mutationState result of
+          DataM r -> pure $ r
+          ErrorM m -> throwError $ error m.message
 
   mapAff f x = (liftEffect $ f x) >>= Promise.toAff
 
@@ -128,12 +138,21 @@ useQuery query options = React.do
   pure $ (queryState $ result)
 
 findState _ _ (Just d) = Data d
-
 findState _ (Just error) _ = Error error
-
 findState (Just loading) _ _ = Loading
-
 findState _ _ _ = Error {message: "Something went wrong"}
+
+
+findStateM _ (Just d) = DataM d
+findStateM (Just error) _ = ErrorM error
+findStateM _ _ = ErrorM {message: "Something went wrong"}
+
+
+mutationState { error, data: result } = findStateM e d
+  where
+  e = toMaybe error
+
+  d = toMaybe result
 
 queryState { loading, error, data: result } = findState l e d
   where
