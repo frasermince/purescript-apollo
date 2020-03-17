@@ -108,7 +108,7 @@ useMutation ::
     ( ( Record (v) ->
         Aff (Record mutation)
       )
-        /\ MutationState (Record mutation)
+        /\ QueryState (Record mutation)
     )
 useMutation mutation options = React.do
   tuple <- unsafeHook $ runEffectFn2 _useMutation mutation options
@@ -116,7 +116,7 @@ useMutation mutation options = React.do
     mutationFunction = prj d0 tuple
   let
     d = prj d1 tuple
-  pure $ ((affFn mutationFunction) /\ (mutationState d))
+  pure $ ((affFn mutationFunction) /\ (queryState d))
   where
   affFn mutationFunction x = do
      result <- mapAff (runEffectFn1 mutationFunction) x
