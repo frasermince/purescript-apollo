@@ -7,7 +7,7 @@ module ApolloHooks
   , useMutation
   , useQuery
   , useApolloClient
-  , MutationState
+  , MutationState(..)
   , handleUpdate
   , module GraphQL.Language.AST
   ) where
