@@ -7,7 +7,6 @@ You can edit this file as you like.
 , dependencies =
     [ "aff-promise"
     , "console"
-    , "debug"
     , "effect"
     , "graphql"
     , "psci-support"

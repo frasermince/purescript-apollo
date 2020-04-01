@@ -24,14 +24,12 @@ import Effect.Uncurried (runEffectFn2, EffectFn2, runEffectFn1, EffectFn1, mkEff
 import Effect (Effect)
 import React.Basic.Hooks.Internal (unsafeHook)
 import Data.Tuple (Tuple(..))
-import Effect.Aff (Aff, launchAff_, throwError, error, try)
+import Effect.Aff (Aff, launchAff_, throwError, error)
 import Control.Promise (Promise, fromAff)
 import Control.Promise as Promise
 import Data.Tuple.Native (T2, prj)
 import Data.Typelevel.Num.Reps (d0, d1)
 import Prim.Row (class Union)
-import Debug.Trace (spy)
-import Data.Either (Either(..))
 
 data QueryState resultType
   = Loading
@@ -118,18 +116,15 @@ useMutation mutation options = React.do
     mutationFunction = prj d0 tuple
   let
     d = prj d1 tuple
-  pure $ ((affFn (spy "MUT FN NEW" mutationFunction)) /\ (queryState d))
+  pure $ ((affFn mutationFunction) /\ (queryState d))
   where
   affFn mutationFunction x = do
-     result <- try $ spy "IMMEDIATE" $ mapAff (runEffectFn1 mutationFunction) x
-     case spy "TRY RESULT" result of
-          Left e -> throwError $ e
-          Right response ->
-            case mutationState (spy "APOLLO RESULT" response) of
-              DataM r -> pure $ r
-              ErrorM m -> throwError $ error m.message
+     result <- mapAff (runEffectFn1 mutationFunction) x
+     case mutationState result of
+          DataM r -> pure $ r
+          ErrorM m -> throwError $ error m.message
 
-  mapAff f x = (liftEffect $ spy "LIFT RESULT" $ f x) >>= Promise.toAff
+  mapAff f x = (liftEffect $ f x) >>= Promise.toAff
 
 useQuery ::
   forall d opts.
@@ -141,7 +136,7 @@ useQuery ::
     (QueryState (Record d))
 useQuery query options = React.do
   result <- unsafeHook $ runEffectFn2 _useQuery query options
-  pure $ (queryState $ spy "RESULT" result)
+  pure $ (queryState $ result)
 
 findState _ _ (Just d) = Data d
 findState _ (Just error) _ = Error error
