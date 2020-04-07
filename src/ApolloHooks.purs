@@ -1,5 +1,6 @@
 module ApolloHooks
   ( QueryState(..)
+  , QueryResult
   , Cache
   , Options
   , Client
@@ -43,6 +44,7 @@ data MutationState resultType
 
 derive instance eqQueryState :: Eq a => Eq (QueryState a)
 
+type QueryResult d = {state :: QueryState d, refetch :: {} -> Effect Unit, networkStatus :: Int}
 type Client = {resetStore :: Effect Unit}
 type JSCache p x
   = { readQuery :: EffectFn1 { query :: DocumentNode } (p)
@@ -78,6 +80,8 @@ type JSQueryResult d
   = { loading :: Nullable Boolean
     , error :: Nullable {message :: (String)}
     , data :: Nullable (Record d)
+    , refetch :: EffectFn1 {} Unit
+    , networkStatus :: Int
     }
 
 foreign import _useQuery ::
@@ -108,7 +112,7 @@ useMutation ::
     ( ( Record (v) ->
         Aff (Record mutation)
       )
-        /\ QueryState (Record mutation)
+        /\ QueryResult (Record mutation)
     )
 useMutation mutation options = React.do
   tuple <- unsafeHook $ runEffectFn2 _useMutation mutation options
@@ -133,7 +137,7 @@ useQuery ::
   Hook
     ( UseEffect Unit
     )
-    (QueryState (Record d))
+    (QueryResult (Record d))
 useQuery query options = React.do
   result <- unsafeHook $ runEffectFn2 _useQuery query options
   pure $ (queryState $ result)
@@ -155,7 +159,7 @@ mutationState { error, data: result } = findStateM e d
 
   d = toMaybe result
 
-queryState { loading, error, data: result } = findState l e d
+queryState { loading, error, data: result, networkStatus, refetch} = {state: findState l e d, networkStatus: networkStatus, refetch: runEffectFn1 refetch}
   where
   l = toMaybe loading
 
