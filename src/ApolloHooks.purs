@@ -44,7 +44,7 @@ data MutationState resultType
 
 derive instance eqQueryState :: Eq a => Eq (QueryState a)
 
-type QueryResult d = {state :: QueryState d, refetch :: {} -> Effect Unit, networkStatus :: Int}
+type QueryResult d q = {state :: QueryState d, refetch :: q -> Effect Unit, networkStatus :: Int}
 type Client = {resetStore :: Effect Unit}
 type JSCache p x
   = { readQuery :: EffectFn1 { query :: DocumentNode } (p)
@@ -76,26 +76,26 @@ foreign import _gql :: Fn1 String DocumentNode
 gql :: String -> DocumentNode
 gql string = runFn1 _gql string
 
-type JSQueryResult d
+type JSQueryResult d q
   = { loading :: Nullable Boolean
     , error :: Nullable {message :: (String)}
     , data :: Nullable (Record d)
-    , refetch :: EffectFn1 {} Unit
+    , refetch :: EffectFn1 q Unit
     , networkStatus :: Int
     }
 
 foreign import _useQuery ::
-  forall d opts.
+  forall d opts refetchOpts.
   EffectFn2 DocumentNode
     (Record opts)
-    (JSQueryResult d)
+    (JSQueryResult d (Record refetchOpts))
 
 foreign import _useMutation ::
-  forall v mutation query otherFields opts _opts.
+  forall v mutation query otherFields opts _opts refetchOpts.
   EffectFn2 DocumentNode
     (Record opts)
-    ( T2 (EffectFn1 (Record v) (Promise (JSQueryResult mutation)))
-        (JSQueryResult mutation)
+    ( T2 (EffectFn1 (Record v) (Promise (JSQueryResult mutation (Record refetchOpts))))
+        (JSQueryResult mutation (Record refetchOpts))
     )
 
 foreign import _useApolloClient :: Hook (UseContext Client) (Nullable Client)
@@ -105,14 +105,14 @@ useApolloClient = React.do
   pure $ toMaybe client
 
 useMutation ::
-  forall v mutation query otherFields opts _opts.
+  forall v mutation query otherFields opts _opts refetchOpts .
   DocumentNode ->
   Record opts ->
   Hook (UseEffect Unit)
     ( ( Record (v) ->
         Aff (Record mutation)
       )
-        /\ QueryResult (Record mutation)
+        /\ QueryResult (Record mutation) (Record refetchOpts)
     )
 useMutation mutation options = React.do
   tuple <- unsafeHook $ runEffectFn2 _useMutation mutation options
@@ -131,13 +131,13 @@ useMutation mutation options = React.do
   mapAff f x = (liftEffect $ f x) >>= Promise.toAff
 
 useQuery ::
-  forall d opts.
+  forall d opts refetchOpts.
   DocumentNode ->
   Record opts ->
   Hook
     ( UseEffect Unit
     )
-    (QueryResult (Record d))
+    (QueryResult (Record d) (Record refetchOpts))
 useQuery query options = React.do
   result <- unsafeHook $ runEffectFn2 _useQuery query options
   pure $ (queryState $ result)
